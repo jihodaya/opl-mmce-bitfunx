@@ -168,7 +168,11 @@ GSTEXTURE *cacheGetTexture(image_cache_t *cache, item_list_t *list, int *cacheId
 
         *UID = cache->nextUID++;
 
-        ioPutRequest(IO_CACHE_LOAD_ART, req);
+        if (ioPutRequest(IO_CACHE_LOAD_ART, req) != IO_OK) {
+            cacheClearItem(oldestEntry, 0);
+            *cacheId = -1;
+            free(req);
+        }
     }
 
     return NULL;

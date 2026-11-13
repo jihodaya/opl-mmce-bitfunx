@@ -48,6 +48,7 @@ typedef struct
 
 extern unsigned char eecore_elf[];
 extern unsigned int size_eecore_elf;
+extern unsigned char popsloader_elf[];
 
 extern unsigned char IOPRP_img[];
 extern unsigned int size_IOPRP_img;
@@ -91,6 +92,24 @@ typedef struct
     u32 flags;
     u32 align;
 } elf_pheader_t;
+
+void sysLaunchPopstarter(const char *elf, char *selector)
+{
+    const elf_header_t *header = (const elf_header_t *)popsloader_elf;
+    const elf_pheader_t *segment = (const elf_pheader_t *)(popsloader_elf + header->phoff);
+    for (int i = 0; i < header->phnum; i++, segment++) {
+        if (segment->type != ELF_PT_LOAD)
+            continue;
+        memcpy(segment->vaddr, popsloader_elf + segment->offset, segment->filesz);
+        memset((u8 *)segment->vaddr + segment->filesz, 0, segment->memsz - segment->filesz);
+    }
+
+    char *args[] = {(char *)elf, selector};
+    SifExitRpc();
+    FlushCache(0);
+    FlushCache(2);
+    ExecPS2((void *)header->entry, NULL, 2, args);
+}
 
 void guiWarning(const char *text, int count);
 void guiEnd();

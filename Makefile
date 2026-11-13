@@ -85,7 +85,7 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		iremsndpatch.o apemodpatch.o f2techioppatch.o cleareffects.o resetspu.o \
 		libsd.o audsrv.o
 
-EECORE_OBJS = ee_core.o ioprp.o util.o \
+EECORE_OBJS = ee_core.o popsloader.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
 		bdm_cdvdman.o bdm_ata_cdvdman.o IOPRP_img.o smb_cdvdman.o \
 		hdd_cdvdman.o hdd_hdpro_cdvdman.o mmce_cdvdman.o cdvdfsv.o \
@@ -127,6 +127,7 @@ MAPFILE = opl.map
 EE_LDFLAGS += -Wl,-Map,$(MAPFILE)
 
 EE_LIBS = -L$(PS2SDK)/ports/lib -L$(GSKIT)/lib -L./lib -lgskit -ldmakit -lpoweroff -lfileXio -lpatches -lpng -lz -lmc -lfreetype -lvux -lcdvd -lnetman -lps2ips -laudsrv -lvorbisfile -lvorbis -logg -lpadx -lelf-loader-nocolour
+EE_LIBS += -ljpeg
 EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Iinclude
 BIN2C = $(PS2SDK)/bin/bin2c
 
@@ -272,6 +273,7 @@ clean:	download_lwNBD
 	rm -fr $(MAPFILE) $(EE_BIN) $(EE_BIN_PACKED) $(EE_BIN_STRIPPED) $(EE_VPKD).* $(EE_OBJS_DIR) $(EE_ASM_DIR)
 	echo "-EE core"
 	$(MAKE) -C ee_core clean
+	$(MAKE) -C popsloader clean
 	echo "-IOP core"
 	echo " -imgdrv"
 	$(MAKE) -C modules/iopcore/imgdrv clean
@@ -394,6 +396,12 @@ ee_core/ee_core.elf: ee_core
 
 $(EE_ASM_DIR)ee_core.c: ee_core/ee_core.elf | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ eecore_elf
+
+popsloader/popsloader.elf: popsloader/loader.c popsloader/Makefile popsloader/linkfile
+	$(MAKE) -C popsloader
+
+$(EE_ASM_DIR)popsloader.c: popsloader/popsloader.elf | $(EE_ASM_DIR)
+	$(BIN2C) $< $@ popsloader_elf
 
 $(EE_ASM_DIR)udnl.c: $(UDNL_OUT) | $(EE_ASM_DIR)
 	$(BIN2C) $(UDNL_OUT) $@ udnl_irx
@@ -821,7 +829,10 @@ download_cfla:
 	./download_cfla.sh
 
 $(TRANSLATIONS_LNG): $(LNG_DIR)lang_%.lng: $(LNG_SRC_DIR)%.yml $(BASE_LANGUAGE) $(LANG_COMPILER)
-	python3 $(LANG_COMPILER) --make_lng --base $(BASE_LANGUAGE) --translation $< $@
+	python3 $(LANG_COMPILER) --make_lng --base $(BASE_LANGUAGE) --translation $< $(LANG_OVERLAY) $@
+
+$(LNG_DIR)lang_Korean.lng: LANG_OVERLAY = --overlay $(LNG_TMPL_DIR)Korean-MMCE.yml
+$(LNG_DIR)lang_Korean.lng: $(LNG_TMPL_DIR)Korean-MMCE.yml
 
 $(TRANSLATIONS_YML): %.yml: $(BASE_LANGUAGE) $(LANG_COMPILER)
 	python3 $(LANG_COMPILER) --update_translation_yml --base $(BASE_LANGUAGE) --translation $@
