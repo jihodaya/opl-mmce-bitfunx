@@ -14,8 +14,6 @@ Bitfunx PSxMemCard Gen2(MMCE)에서 PS2 게임을 편하게 쓰도록 고친 [Op
 - **Gen2 게임 표지**: `ART/<게임 ID>_COV.png`뿐 아니라 `.jpg`, `.jpeg`, 그리고 `_COV`가 없는 파일 이름도 읽습니다. MMCE 기본 폴더를 설정했으면 그 폴더와 카드 루트의 `ART/`를 모두 찾습니다.
 - **디스크 그림**: `ART/<게임 ID>_ICO.png`가 있을 때만 표시하고, 없으면 빈 CD 그림을 그리지 않습니다.
 - **표지 읽기 안정성**: 잘린 PNG와 흑백 PNG를 안전하게 처리하고, 메모리가 모자랄 때 표지 캐시가 꼬이지 않도록 고쳤습니다.
-- **게임별 메모리카드**: 게임을 실행할 때 게임 ID를 Gen2에 보내므로, Gen2가 게임마다 전용 메모리카드로 바꿉니다. 원래 MMCE OPL에 있는 기능이며, 이 빌드는 설정과 관계없이 항상 보냅니다.
-- **PS1 게임**: 원래 OPL과 똑같이 동작합니다. 바꾼 것이 없습니다.
 
 ## 준비물
 
@@ -50,8 +48,6 @@ Bitfunx PSxMemCard Gen2(MMCE)에서 PS2 게임을 편하게 쓰도록 고친 [Op
 2. **설정 → MMCE 설정**에서 **MMCE 시작 모드**를 자동으로 바꿉니다.
 3. **설정 → 화면 설정 → 언어**에서 `Korean`을 고릅니다.
 4. 설정을 저장합니다.
-
-PS1 게임이나 다른 앱을 OPL에서 실행하려면 **응용프로그램 시작 모드**도 켭니다.
 
 ### 3. 표지와 디스크 그림
 
@@ -91,33 +87,13 @@ OPL은 `lang_Korean.lng`와 `font_Korean.ttf`를 다음 위치에서 찾습니�
 
 같은 언어 파일이 여러 곳에 있으면 먼저 찾은 파일을 씁니다. 메모리카드를 가장 먼저 찾고, Gen2와 USB는 게임 목록을 읽을 때 찾습니다. 다른 버전의 `lang_Korean.lng`가 메모리카드 `OPL/`에 남아 있으면 지우세요. 문구 순서가 달라 메뉴 글자가 엉뚱하게 나옵니다.
 
-## 게임 중 저장 공간이 부족할 때
-
-Gen2는 게임마다 전용 메모리카드를 쓰므로 보통은 부족하지 않습니다. 부족하다는 메시지가 나오면 게임을 끄지 말고 저장 화면에서 다음처럼 합니다.
-
-1. Gen2의 **오른쪽 버튼을 짧게** 눌러 다음 채널로 바꿉니다. 왼쪽 버튼을 짧게 누르면 이전 채널입니다. 채널마다 별도의 메모리카드이며 기본 8개입니다.
-2. 게임 저장 화면에서 메모리카드를 다시 고른 뒤 저장합니다.
-3. 저장한 채널 번호를 기억해 둡니다. 나중에 불러올 때 그 채널로 바꿔야 합니다.
-
-저장하는 도중에는 버튼을 누르지 마세요. 카드가 바뀐 것을 인식하지 못하는 게임이라면 2번 슬롯에 일반 메모리카드를 꽂고 그쪽에 저장합니다. 버튼 동작은 [sd2psx 사용법](https://sd2psx.net/navigation.html)을 참고하세요.
-
-## PS1 게임
-
-PS1 처리는 원래 OPL과 같습니다. USB의 `POPS/`에 `POPSTARTER.ELF`를 `XX.게임명.ELF`로 복사해 두는 기존 방식을 그대로 씁니다.
-
-- 게임 중 리셋(IGR)을 누르면 OPL이 아니라 `mc0:/BOOT/BOOT.ELF`(보통 wLaunchELF)로 나갑니다. POPStarter가 정하는 동작이라 OPL에서 바꿀 수 없습니다.
-- 일부 게임이 버벅이는 것은 대개 POPStarter 호환성 문제입니다. 자세한 설정은 [POPStarter USB 문서](https://bitbucket.org/ShaolinAssassin/popstarter-documentation-stuff/wiki/usb-mode)를 참고하세요.
-- PS1 게임을 표지와 함께 목록으로 고르고 싶다면 [POPSLoader](https://github.com/NathanNeurotic/POPSLoader)를 쓸 수 있습니다. 게임마다 `XX.*.ELF`를 만들 필요가 없습니다.
-
-## 알려진 문제와 확인 상태
+## 확인 상태
 
 | 항목 | 상태 |
 | --- | --- |
 | 한국어 메뉴 | 실기 확인 |
 | Gen2 표지 표시 | 실기 확인 |
 | 디스크 그림 숨김 (테스트 빌드 6) | 실기 확인 전 |
-| PS1 IGR이 wLaunchELF로 나감 | POPStarter 동작, 수정 불가 |
-| 일부 PS1 게임 버벅임 | POPStarter 호환성 문제로 추정 |
 
 ## 직접 빌드하기
 
@@ -154,11 +130,9 @@ make lng/lang_Korean.lng
 | --- | --- |
 | `main` | 최신 코드와 이 설명서 |
 | `bitfunx-mmce-next` | 개발 브랜치 |
-| `bitfunx-mmce` | 초기 테스트 코드. Gen2에서 PS1을 실행하려던 시도가 들어 있으며 지금은 쓰지 않습니다. |
+| `bitfunx-mmce` | 초기 테스트 코드 (지금은 쓰지 않음) |
 
-### `gen2 펌웨어/sd2psx.uf2`
-
-[sd2psXtd 1.4.0 공식 배포본](https://github.com/sd2psXtd/firmware/releases/tag/1.4.0)과 SHA-256이 같은 펌웨어입니다. 만든이가 사용하는 버전을 함께 보관한 것이며, 최신 펌웨어와 소스는 원 저장소에서 받으세요.
+`gen2 펌웨어/sd2psx.uf2`는 만든이가 쓰는 [sd2psXtd 1.4.0 공식 배포본](https://github.com/sd2psXtd/firmware/releases/tag/1.4.0)을 그대로 보관한 것입니다.
 
 ## 출처와 라이선스
 
