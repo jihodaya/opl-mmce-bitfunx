@@ -297,6 +297,8 @@ static void itemExecRefresh(struct menu_item *curMenu)
     item_list_t *support = curMenu->userdata;
 
     if (support && support->enabled) {
+        if (support->mode == APP_MODE)
+            appRequestRefresh();
         ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
         sfxPlay(SFX_CONFIRM);
     }

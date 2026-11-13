@@ -23,10 +23,12 @@ typedef struct
     char boot[APP_BOOT_MAX + 1];
     char argv1[APP_ARGV1_MAX + 1];
     u8 legacy;
+    u8 mmceVcd;
 } app_info_t;
 
 void appInit(item_list_t *itemList);
 item_list_t *appGetObject(int initOnly);
+void appRequestRefresh(void);
 void appPostUpdateCallback(int mode);
 
 #endif

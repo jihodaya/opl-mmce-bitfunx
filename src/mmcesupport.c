@@ -28,14 +28,24 @@ static base_game_info_t *mmceGames;
 // forward declaration
 static item_list_t mmceGameList;
 
+static void mmceSelectPrefix(int slot)
+{
+    const char *prefix = gMMCEPrefix;
+    while (*prefix == '/')
+        prefix++;
+    size_t length = strlen(prefix);
+    snprintf(mmcePrefix, sizeof(mmcePrefix), "mmce%d:/%s%s", slot, prefix,
+             length > 0 && prefix[length - 1] != '/' ? "/" : "");
+}
+
 int mmceDetectSlot(void)
 {
     int ret = -1;
     if (fileXioDevctl("mmce0:/", 0x1, NULL, 0, NULL, 0) != -1) {
-        sprintf(mmcePrefix, "mmce0:/%s", gMMCEPrefix);
+        mmceSelectPrefix(0);
         ret = 2;
     } else if (fileXioDevctl("mmce1:/", 0x1, NULL, 0, NULL, 0) != -1) {
-        sprintf(mmcePrefix, "mmce1:/%s", gMMCEPrefix);
+        mmceSelectPrefix(1);
         ret = 3;
     }
     return ret;
@@ -43,10 +53,8 @@ int mmceDetectSlot(void)
 
 void mmceSetPrefix(void)
 {
-    if (gMMCESlot == 0)
-        sprintf(mmcePrefix, "mmce0:/%s", gMMCEPrefix);
-    else if (gMMCESlot == 1)
-        sprintf(mmcePrefix, "mmce1:/%s", gMMCEPrefix);
+    if (gMMCESlot == 0 || gMMCESlot == 1)
+        mmceSelectPrefix(gMMCESlot);
     else if (gMMCESlot == 2)
         (void)mmceDetectSlot();
 }
@@ -72,12 +80,7 @@ void mmceInit(item_list_t *itemList)
 
     mmceLoadModules();
 
-    if (gMMCESlot == 0)
-        sprintf(mmcePrefix, "mmce0:/");
-    else if (gMMCESlot == 1)
-        sprintf(mmcePrefix, "mmce1:/");
-    else if (gMMCESlot == 2)
-        mmceDetectSlot();
+    mmceSetPrefix();
 
     mmceGameList.enabled = 1;
 }
@@ -376,6 +379,22 @@ static config_set_t *mmceGetConfig(item_list_t *itemList, int id)
 static int mmceGetImage(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
 {
     char path[256];
+    if (isRelative && !strcmp(folder, "ART") && !strcasecmp(suffix, "COV")) {
+        const char *coverSuffixes[] = {"_COV", ""};
+        int hasPrefix = strlen(mmcePrefix) > 7;
+        for (int i = 0; i < 2; i++) {
+            snprintf(path, sizeof(path), "%sART/%s%s", mmcePrefix, value, coverSuffixes[i]);
+            if (texDiscoverArtwork(resultTex, path) == 0)
+                return 0;
+            if (hasPrefix) {
+                snprintf(path, sizeof(path), "%.7sART/%s%s", mmcePrefix, value, coverSuffixes[i]);
+                if (texDiscoverArtwork(resultTex, path) == 0)
+                    return 0;
+            }
+        }
+        return ERR_BAD_FILE;
+    }
+
     if (isRelative)
         snprintf(path, sizeof(path), "%s%s/%s_%s", mmcePrefix, folder, value, suffix);
     else

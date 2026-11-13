@@ -145,6 +145,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--base', type=argparse.FileType('r', encoding='utf-8'), required=True, metavar="BASE_YML")
     parser.add_argument('--translation', type=argparse.FileType('r+', encoding='utf-8'), metavar="LANG_YML")
+    parser.add_argument('--overlay', type=argparse.FileType('r', encoding='utf-8'), metavar="LANG_YML",
+                        help='Override selected translations when generating a .lng file')
     parser.add_argument('output_file', nargs='?', type=argparse.FileType('w', encoding='utf-8'), default=sys.stdout)
 
     args = parser.parse_args()
@@ -172,4 +174,8 @@ if __name__ == '__main__':
         args.translation.truncate()
     elif args.make_lng:
         translation_obj = yaml.safe_load(args.translation)
+        if args.overlay:
+            overlay_obj = yaml.safe_load(args.overlay)
+            translation_obj['translations'].update(overlay_obj['translations'])
+            translation_obj['comments'] += '\n' + overlay_obj['comments']
         make_lng(base_obj, translation_obj, args.output_file, args.translation.name)

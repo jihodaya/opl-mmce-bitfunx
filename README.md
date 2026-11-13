@@ -2,6 +2,8 @@
 
 ![logo](https://github.com/ps2homebrew/Open-PS2-Loader/blob/master/gfx/logo.png)
 
+[Bitfunx PSxMemCard Gen2 테스트 빌드 설치 안내](notes/bitfunx-mmce-ko.md)
+
 Copyright 2013, Ifcaro & jimmikaelkael
 Licensed under Academic Free License version 3.0
 Review the LICENSE file for further details.

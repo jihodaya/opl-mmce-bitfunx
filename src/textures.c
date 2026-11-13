@@ -3,6 +3,7 @@
 #include "include/util.h"
 #include "include/ioman.h"
 #include <png.h>
+#include <jpeglib.h>
 
 extern void *load0_png;
 extern void *load1_png;
@@ -280,18 +281,26 @@ static int texEnd(png_structp pngPtr, png_infop infoPtr, void *pFileBuffer, int 
     if (pFileBuffer != NULL)
         free(pFileBuffer);
 
-    if (infoPtr != NULL)
+    if (pngPtr != NULL)
         png_destroy_read_struct(&pngPtr, &infoPtr, (png_infopp)NULL);
 
     return status;
 }
 
+struct tex_png_buffer
+{
+    const u8 *next;
+    size_t remaining;
+};
+
 static void texReadMemFunction(png_structp pngPtr, png_bytep data, png_size_t length)
 {
-    void **PngBufferPtr = png_get_io_ptr(pngPtr);
-
-    memcpy(data, *PngBufferPtr, length);
-    *PngBufferPtr = (u8 *)(*PngBufferPtr) + length;
+    struct tex_png_buffer *buffer = png_get_io_ptr(pngPtr);
+    if (length > buffer->remaining)
+        png_error(pngPtr, "Truncated PNG");
+    memcpy(data, buffer->next, length);
+    buffer->next += length;
+    buffer->remaining -= length;
 }
 
 static void texReadPixels4(GSTEXTURE *texture, png_bytep *rowPointers, size_t size)
@@ -392,8 +401,10 @@ static void texReadData(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPt
     png_bytep *rowPointers = calloc(texture->Height, sizeof(png_bytep));
 
     png_bytep allRows = malloc(rowBytes * texture->Height);
-    if (!allRows) {
+    if (!rowPointers || !allRows) {
         free(rowPointers);
+        free(allRows);
+        texFree(texture);
         LOG("TEXTURES PngReadData: Failed to allocate memory for PNG rows\n");
         return;
     }
@@ -416,9 +427,7 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
     texPrepare(texture);
     png_structp pngPtr = NULL;
     png_infop infoPtr = NULL;
-    png_voidp readData = NULL;
-    png_rw_ptr readFunction = NULL;
-    void *PngFileBufferPtr;
+    struct tex_png_buffer input;
     void *pFileBuffer = NULL;
 
     if (filePath) {
@@ -427,7 +436,10 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
             return ERR_BAD_FILE;
 
         int fileSize = lseek(fd, 0, SEEK_END);
-        lseek(fd, 0, SEEK_SET);
+        if (fileSize < 8 || lseek(fd, 0, SEEK_SET) < 0) {
+            close(fd);
+            return ERR_BAD_FILE;
+        }
 
         pFileBuffer = malloc(fileSize);
         if (pFileBuffer == NULL) {
@@ -444,16 +456,14 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
 
         close(fd);
 
-        PngFileBufferPtr = pFileBuffer;
-        readData = &PngFileBufferPtr;
-        readFunction = &texReadMemFunction;
+        input.next = pFileBuffer;
+        input.remaining = fileSize;
     } else {
         if (texId == -1 || !internalDefault[texId].texture)
             return ERR_BAD_FILE;
 
-        PngFileBufferPtr = internalDefault[texId].texture;
-        readData = &PngFileBufferPtr;
-        readFunction = &texReadMemFunction;
+        input.next = (const u8 *)internalDefault[texId].texture;
+        input.remaining = SIZE_MAX; // The built-in PNGs are generated from known-good assets.
     }
 
     pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)NULL, NULL, NULL);
@@ -467,7 +477,7 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
     if (setjmp(png_jmpbuf(pngPtr)))
         return texEnd(pngPtr, infoPtr, pFileBuffer, ERR_SET_JMP);
 
-    png_set_read_fn(pngPtr, readData, readFunction);
+    png_set_read_fn(pngPtr, &input, texReadMemFunction);
 
     unsigned int sigRead = 0;
     png_set_sig_bytes(pngPtr, sigRead);
@@ -481,6 +491,9 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
 
     if (bitDepth == 16)
         png_set_strip_16(pngPtr);
+
+    if (colorType == PNG_COLOR_TYPE_GRAY || colorType == PNG_COLOR_TYPE_GRAY_ALPHA)
+        png_set_gray_to_rgb(pngPtr);
 
     if (colorType == PNG_COLOR_TYPE_GRAY || bitDepth < 4) {
         png_set_expand(pngPtr);
@@ -541,11 +554,6 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
     return texEnd(pngPtr, infoPtr, pFileBuffer, 0);
 }
 
-static int texLoad(GSTEXTURE *texture, const char *filePath)
-{
-    return texLoadAll(texture, filePath, -1);
-}
-
 int texLoadInternal(GSTEXTURE *texture, int texId)
 {
     return texLoadAll(texture, NULL, texId);
@@ -562,12 +570,80 @@ int texDiscoverLoad(GSTEXTURE *texture, const char *path, int texId)
     else
         snprintf(filePath, sizeof(filePath), "%s.%s", path, "png");
 
-    int fd = open(filePath, O_RDONLY);
-    if (fd > 0) {
-        // File found, load it
-        close(fd);
-        return (texLoad(texture, filePath) >= 0) ? 0 : ERR_BAD_FILE;
+    if (texLoadAll(texture, filePath, -1) >= 0 && texture->Mem)
+        return 0;
+    texFree(texture);
+    return ERR_BAD_FILE;
+}
+
+struct tex_jpeg_error
+{
+    struct jpeg_error_mgr manager;
+    jmp_buf jump;
+};
+
+static void texJpegError(j_common_ptr jpeg)
+{
+    struct tex_jpeg_error *error = (struct tex_jpeg_error *)jpeg->err;
+    longjmp(error->jump, 1);
+}
+
+static int texLoadJpeg(GSTEXTURE *texture, const char *path)
+{
+    FILE *file = fopen(path, "rb");
+    if (!file)
+        return ERR_BAD_FILE;
+
+    struct jpeg_decompress_struct jpeg = {0};
+    struct tex_jpeg_error error;
+    jpeg.err = jpeg_std_error(&error.manager);
+    error.manager.error_exit = texJpegError;
+
+    texPrepare(texture);
+    if (setjmp(error.jump)) {
+        jpeg_destroy_decompress(&jpeg);
+        fclose(file);
+        texFree(texture);
+        return ERR_BAD_FILE;
     }
 
-    return ERR_BAD_FILE;
+    jpeg_create_decompress(&jpeg);
+    jpeg_stdio_src(&jpeg, file);
+    jpeg_read_header(&jpeg, TRUE);
+    jpeg.out_color_space = JCS_RGB;
+    jpeg_calc_output_dimensions(&jpeg);
+
+    int result = ERR_BAD_DIMENSION;
+    if (texSizeValidate(jpeg.output_width, jpeg.output_height, GS_PSM_CT24) == 0) {
+        texture->Width = jpeg.output_width;
+        texture->Height = jpeg.output_height;
+        texture->Mem = memalign(128, gsKit_texture_size_ee(texture->Width, texture->Height, GS_PSM_CT24));
+        result = ERR_BAD_FILE;
+        if (texture->Mem) {
+            jpeg_start_decompress(&jpeg);
+            while (jpeg.output_scanline < jpeg.output_height) {
+                JSAMPROW row = (u8 *)texture->Mem + jpeg.output_scanline * jpeg.output_width * 3;
+                jpeg_read_scanlines(&jpeg, &row, 1);
+            }
+            jpeg_finish_decompress(&jpeg);
+            result = 0;
+        }
+    }
+    jpeg_destroy_decompress(&jpeg);
+    fclose(file);
+    return result;
+}
+
+int texDiscoverArtwork(GSTEXTURE *texture, const char *path)
+{
+    if (texDiscoverLoad(texture, path, -1) == 0)
+        return 0;
+
+    char filename[256];
+    snprintf(filename, sizeof(filename), "%s.jpg", path);
+    if (texLoadJpeg(texture, filename) == 0)
+        return 0;
+
+    snprintf(filename, sizeof(filename), "%s.jpeg", path);
+    return texLoadJpeg(texture, filename);
 }
