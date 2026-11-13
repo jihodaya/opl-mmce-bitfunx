@@ -55,7 +55,6 @@ void mmceLoadModules(void)
 {
     LOG("MMCESUPPORT LoadModules\n");
     LOG("[MMCEMAN]:\n");
-    sysLoadModuleBuffer(&mmcesio2_irx, size_mmcesio2_irx, 0, NULL);
     sysLoadModuleBuffer(&mmceman_irx, size_mmceman_irx, 0, NULL);
 }
 

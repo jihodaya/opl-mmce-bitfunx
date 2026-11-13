@@ -80,7 +80,6 @@ IMPORT_BIN2C(mmce_cdvdman_irx);
 
 IMPORT_BIN2C(mmce_mcemu_irx);
 
-IMPORT_BIN2C(mmcesio2_irx);
 
 IMPORT_BIN2C(mmceman_irx);
 
