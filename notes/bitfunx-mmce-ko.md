@@ -11,14 +11,27 @@
 
 ## 설치 및 확인
 
-1. 기존 OPL과 함께 `OPL-Bitfunx-MMCE.ELF`를 별도 이름으로 두고 실행합니다. OPL에서 **MMCE 시작 모드**와 **응용프로그램 시작 모드**를 켭니다.
-2. 한국어를 사용하려면 `LNG/lang_Korean.lng`와 `LNG/font_Korean.ttf`를 Gen2의 `LNG/` 폴더에 넣습니다. MMCE 기본 폴더를 설정했다면 그 폴더의 `LNG/`를 사용합니다. 초기 부팅부터 한국어를 쓰려면 두 파일을 메모리카드의 `OPL/` 폴더에 넣고, OPL 화면 설정에서 `Korean`을 선택하고 저장합니다.
-3. 표지만 있는 PS2 게임을 확인합니다. `ART/<게임 ID>_COV.png`를 우선 읽고 `.jpg`, `.jpeg`, `_COV`가 없는 이름도 지원합니다. MMCE 기본 폴더를 설정한 경우 그곳의 `ART/`와 카드 루트의 `ART/`를 모두 확인합니다.
-4. PS1 실행을 확인하려면 Gen2를 PS2 **슬롯 1**에 두고, microSD 루트의 `POPS/`에 `POPSTARTER.ELF`, `게임명.VCD`, `POPS_IOX.PAK`를 둡니다. 사용 중인 POPStarter 빌드에 추가 지원 파일이 있다면 USB에서 정상 작동하던 구성도 함께 복사합니다.
-5. [MMCEMAN for POPSTARTER 테스트 드라이버](https://github.com/ps2-mmce/mmceman/releases/tag/popstarter)의 `usbd.irx`와 `usbhdfsd.irx`를 PS2 메모리카드의 `mc0:/POPSTARTER/`에 넣습니다. 이 폴더는 microSD의 루트 `POPS/`와 별개입니다. USB 또는 MX4SIO에서 사용한 IRX가 있으면 먼저 복사해 두고, MMCE 테스트가 끝난 뒤 해당 구성을 쓸 때 복원합니다.
-6. USB를 빼고 응용프로그램 메뉴의 `[PS1] 게임명`을 실행합니다. OPL은 ELF를 MMCE에서 읽고, POPStarter에는 드라이버가 다시 마운트할 `mass:/POPS/XX.게임명.ELF` 경로를 넘깁니다. 이 경로에 맞춘 게임별 ELF 복사본은 필요 없습니다. 기존 `mmce0:`의 `XX.*.ELF` 앱 항목도 같은 경로로 실행됩니다.
+1. zip을 풀어 나온 `OPL-Bitfunx-MMCE.ELF`와 `LNG` 폴더를 **같은 폴더에 그대로** 복사합니다. 예를 들어 Gen2 microSD의 `APPS/OPL-Bitfunx/`에 넣으면 됩니다. 기존 OPL을 덮어쓰지 말고 따로 두세요.
+2. 이 ELF를 실행하고 OPL에서 **MMCE 시작 모드**와 **응용프로그램 시작 모드**를 켭니다.
+3. **설정 → 화면 설정 → 언어**에서 `Korean`을 선택하고 저장합니다. MMCE 게임 목록이 열린 뒤에 목록에 나타납니다.
+4. 표지는 `ART/<게임 ID>_COV.png`를 우선 읽고 `.jpg`, `.jpeg`, `_COV`가 없는 이름도 지원합니다. MMCE 기본 폴더를 설정한 경우 그곳의 `ART/`와 카드 루트의 `ART/`를 모두 확인합니다.
 
-실기에서 확인할 항목은 표지만 있는 PS2 게임, FAT32 또는 exFAT Gen2의 PS1 부팅과 저장, 기존 USB 및 MX4SIO 실행입니다. 검은 화면이 재현되면 VCD 이름, POPStarter 버전, 파일시스템, 표시된 OPL 안내가 다음 진단에 필요합니다.
+### 한국어 파일을 찾는 위치
+
+OPL은 `lang_Korean.lng`와 `font_Korean.ttf`를 다음 위치에서 찾습니다. 두 파일은 항상 같은 폴더에 있어야 합니다.
+
+- ELF가 있는 폴더의 `LNG/` 또는 ELF가 있는 폴더 자체 (테스트 빌드 3부터)
+- Gen2 microSD 루트의 `LNG/`, MMCE 기본 폴더를 설정했다면 그 폴더의 `LNG/`
+- USB 등 BDM 장치 루트의 `LNG/`
+- 메모리카드의 `OPL/` 폴더 바로 안 (`mc0:/OPL/lang_Korean.lng`)
+
+같은 언어 파일이 여러 곳에 있으면 메모리카드 `OPL/`의 파일을 먼저 씁니다. 이전 테스트 빌드의 `lang_Korean.lng`가 메모리카드에 남아 있으면 지우세요. 문구 순서가 달라 메뉴 글자가 엉뚱하게 표시됩니다.
+
+### PS1 게임
+
+PS1은 지금처럼 USB에서 실행하는 방법을 권장합니다. MMCE 실행을 시험하면서 [MMCEMAN for POPSTARTER 테스트 드라이버](https://github.com/ps2-mmce/mmceman/releases/tag/popstarter)의 `usbd.irx`와 `usbhdfsd.irx`를 `mc0:/POPSTARTER/`에 넣었다면, 지우거나 백업해 둔 원래 파일로 되돌려야 USB에서 다시 실행됩니다.
+
+Gen2 microSD의 `POPS/`에 VCD가 있으면 응용프로그램 메뉴에 `[PS1] 게임명` 항목이 보입니다. 이 항목은 위 테스트 드라이버가 있어야 실행되는 실험 기능입니다.
 
 ## 소스 및 출처
 

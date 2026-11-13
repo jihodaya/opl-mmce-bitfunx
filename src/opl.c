@@ -2069,6 +2069,7 @@ int main(int argc, char *argv[])
             autoLaunchBDMGame(argv);
     }
 
+    lngSetBootPath(argc > 0 ? argv[0] : NULL);
     init();
 
     // until this point in the code is reached, only PREINIT_LOG macro should be used

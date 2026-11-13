@@ -240,6 +240,7 @@ static int bdmNeedsUpdate(item_list_t *itemList)
     }
 
     // update Languages
+    lngAddBootLanguages("mass", itemList->mode);
     if (!pDeviceData->LanguagesLoaded) {
         sprintf(path, "%sLNG", pDeviceData->bdmPrefix);
         if (lngAddLanguages(path, "/", itemList->mode) > 0)

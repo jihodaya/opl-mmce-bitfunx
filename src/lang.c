@@ -102,7 +102,15 @@ char *lngGetValue(void)
 static int lngReadEntry(int index, const char *path, const char *separator, const char *name, unsigned char d_type)
 {
     if (d_type != DT_DIR) {
-        if (strstr(name, ".lng") || strstr(name, ".LNG")) {
+        int nameLength = strlen(name);
+        if (nameLength > 9 && (strstr(name, ".lng") || strstr(name, ".LNG"))) {
+
+            // The same language may sit next to the ELF, on the memory card and on a device. Keep the first one found.
+            int i;
+            for (i = 0; i < nLanguages + index; i++) {
+                if ((int)strlen(languages[i].name) == nameLength - 9 && strncasecmp(languages[i].name, name + 5, nameLength - 9) == 0)
+                    return index;
+            }
 
             language_t *currLang = &languages[nLanguages + index];
 
@@ -167,10 +175,55 @@ int lngAddLanguages(char *path, const char *separator, int mode)
     return result;
 }
 
+static char lngBootDir[128];
+static int lngBootLoaded;
+
+void lngSetBootPath(const char *elfPath)
+{
+    const char *colon, *slash;
+
+    lngBootDir[0] = '\0';
+    lngBootLoaded = 0;
+    if (elfPath == NULL || (colon = strchr(elfPath, ':')) == NULL || (slash = strrchr(elfPath, '/')) == NULL || slash < colon)
+        return;
+
+    size_t length = slash - elfPath + 1;
+    if (length < sizeof(lngBootDir)) {
+        memcpy(lngBootDir, elfPath, length);
+        lngBootDir[length] = '\0';
+    }
+}
+
+// Languages shipped with the OPL ELF: <ELF folder>/LNG/ and the ELF folder itself, e.g. mmce0:/APPS/OPL/LNG/.
+int lngAddBootLanguages(const char *device, int mode)
+{
+    char path[sizeof(lngBootDir) + 3];
+    size_t length = strlen(lngBootDir);
+    int result;
+
+    if (lngBootLoaded || length == 0 || strncmp(lngBootDir, device, strlen(device)) != 0)
+        return 0;
+
+    snprintf(path, sizeof(path), "%sLNG", lngBootDir);
+    result = lngAddLanguages(path, "/", mode);
+
+    // The device root is already scanned as <device>/LNG by its support module.
+    if (lngBootDir[length - 2] != ':') {
+        memcpy(path, lngBootDir, length - 1);
+        path[length - 1] = '\0';
+        result += lngAddLanguages(path, "/", mode);
+    }
+
+    if (result > 0)
+        lngBootLoaded = 1;
+    return result;
+}
+
 void lngInit(void)
 {
     fntInit();
 
+    lngAddBootLanguages("mc", -1);
     lngAddLanguages(gBaseMCDir, "/", -1);
 }
 

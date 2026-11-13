@@ -136,9 +136,17 @@ static int mmceNeedsUpdate(item_list_t *itemList)
     }
 
     // update Languages
+    lngAddBootLanguages("mmce", mmceGameList.mode);
     if (!LanguagesLoaded) {
+        int found;
         sprintf(path, "%sLNG", mmcePrefix);
-        if (lngAddLanguages(path, "/", mmceGameList.mode) > 0)
+        found = lngAddLanguages(path, "/", mmceGameList.mode);
+        // With an MMCE folder configured, LNG may still sit at the card root, like ART.
+        if (strlen(mmcePrefix) > 7) {
+            sprintf(path, "%.7sLNG", mmcePrefix);
+            found += lngAddLanguages(path, "/", mmceGameList.mode);
+        }
+        if (found > 0)
             LanguagesLoaded = 1;
     }
 

@@ -17,6 +17,8 @@ typedef struct
 } language_t;
 
 int lngAddLanguages(char *path, const char *separator, int mode);
+void lngSetBootPath(const char *elfPath);
+int lngAddBootLanguages(const char *device, int mode);
 void lngInit(void);
 char *lngGetValue(void);
 void lngEnd(void);
