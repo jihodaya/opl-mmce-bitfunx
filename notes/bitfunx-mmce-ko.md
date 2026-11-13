@@ -1,4 +1,6 @@
-# Bitfunx PSxMemCard Gen2 테스트 빌드
+# JJome OPL
+
+Bitfunx PSxMemCard Gen2(MMCE)용 OPL 테스트 빌드입니다. OPL 정보 화면에는 `JJome OPL <버전>`으로 표시됩니다.
 
 [ps2-mmce/Open-PS2-Loader](https://github.com/ps2-mmce/Open-PS2-Loader)의 `mmce_support` 브랜치(`e554796`, 2025-11-24)를 기반으로 수정했습니다. OPL MMCE Beta 2 이후의 공식 OPL 수정(GCC 15 대응, MX4SIO 회귀 수정, VMC 그룹)과 MMCE 알람·대기 사이클 설정 제거가 포함됩니다. 여기에 두 가지를 더했습니다.
 
@@ -11,7 +13,7 @@
 
 ## 설치 및 확인
 
-1. zip을 풀어 나온 `OPL-Bitfunx-MMCE.ELF`와 `LNG` 폴더를 **같은 폴더에 그대로** 복사합니다. 예를 들어 Gen2 microSD의 `APPS/OPL-Bitfunx/`에 넣으면 됩니다. 기존 OPL을 덮어쓰지 말고 따로 두세요.
+1. zip을 풀어 나온 `JJome-OPL.ELF`와 `LNG` 폴더를 **같은 폴더에 그대로** 복사합니다. 예를 들어 Gen2 microSD의 `APPS/JJome-OPL/`에 넣으면 됩니다. 기존 OPL을 덮어쓰지 말고 따로 두세요.
 2. 이 ELF를 실행하고 OPL에서 **MMCE 시작 모드**와 **응용프로그램 시작 모드**를 켭니다.
 3. **설정 → 화면 설정 → 언어**에서 `Korean`을 선택하고 저장합니다. MMCE 게임 목록이 열린 뒤에 목록에 나타납니다.
 4. 표지는 `ART/<게임 ID>_COV.png`를 우선 읽고 `.jpg`, `.jpeg`, `_COV`가 없는 이름도 지원합니다. MMCE 기본 폴더를 설정한 경우 그곳의 `ART/`와 카드 루트의 `ART/`를 모두 확인합니다.
