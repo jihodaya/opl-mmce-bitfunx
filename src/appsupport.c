@@ -10,14 +10,11 @@
 #include "include/bdmsupport.h"
 #include "include/ethsupport.h"
 #include "include/hddsupport.h"
-#include "include/mmcesupport.h"
 
 #include <elf-loader.h>
-#include <zlib.h>
 
 static int appForceUpdate = 1;
 static int appItemCount = 0;
-static time_t appPopsModified;
 
 static config_set_t *configApps;
 static app_info_t *appsList;
@@ -32,52 +29,6 @@ struct app_info_linked
 static item_list_t appItemList;
 
 static void appFreeList(void);
-
-#define MMCE_POPS_DIR "mmce0:/POPS/"
-#define POPSTARTER_SELECTOR "mass:/POPS/XX."
-
-static int appAddMmceVcds(struct app_info_linked **apps)
-{
-    item_list_t *mmce = mmceGetObject(1);
-    if (!mmce || strncmp(mmce->itemGetPrefix(mmce), "mmce0:/", 7) != 0)
-        return 0;
-
-    DIR *dir = opendir(MMCE_POPS_DIR);
-    if (!dir)
-        return 0;
-
-    int count = 0;
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        size_t length = strlen(entry->d_name);
-        if (entry->d_type == DT_DIR || length <= 4 || length > APP_ARGV1_MAX ||
-            length - 4 + sizeof("[PS1] ") > APP_TITLE_MAX + 1 ||
-            strcasecmp(entry->d_name + length - 4, ".vcd") != 0)
-            continue;
-
-        struct app_info_linked *item = calloc(1, sizeof(*item));
-        if (!item)
-            break;
-        snprintf(item->app.title, sizeof(item->app.title), "[PS1] %.*s", (int)length - 4, entry->d_name);
-        snprintf(item->app.path, sizeof(item->app.path), "%s", MMCE_POPS_DIR);
-        snprintf(item->app.argv1, sizeof(item->app.argv1), "%s", entry->d_name);
-        item->app.mmceVcd = 1;
-        item->next = *apps;
-        *apps = item;
-        count++;
-    }
-    closedir(dir);
-    return count;
-}
-
-static time_t appMmcePopsModified(void)
-{
-    struct stat info;
-    item_list_t *mmce = mmceGetObject(1);
-    if (mmce && !strncmp(mmce->itemGetPrefix(mmce), "mmce0:/", 7) && stat(MMCE_POPS_DIR, &info) == 0)
-        return info.st_mtime;
-    return 0;
-}
 
 static struct config_value_t *appGetConfigValue(int id)
 {
@@ -151,9 +102,8 @@ void appInit(item_list_t *itemList)
     LOG("APPSUPPORT Init\n");
     appForceUpdate = 1;
     configGetInt(configGetByType(CONFIG_OPL), "app_frames_delay", &appItemList.delay);
-    if (configApps)
-        configFree(configApps);
     configApps = oplGetLegacyAppsConfig();
+    appsList = NULL;
     appItemList.enabled = 1;
 }
 
@@ -162,11 +112,6 @@ item_list_t *appGetObject(int initOnly)
     if (initOnly && !appItemList.enabled)
         return NULL;
     return &appItemList;
-}
-
-void appRequestRefresh(void)
-{
-    appForceUpdate = 1;
 }
 
 static int appNeedsUpdate(item_list_t *itemList)
@@ -181,17 +126,8 @@ static int appNeedsUpdate(item_list_t *itemList)
     if (oplShouldAppsUpdate())
         update = 1;
 
-    time_t modified = appMmcePopsModified();
-    if (modified != appPopsModified) {
-        appPopsModified = modified;
-        update = 1;
-    }
-
-    if (update) {
-        if (configApps)
-            configFree(configApps);
+    if (update)
         configApps = oplGetLegacyAppsConfig();
-    }
 
     return update;
 }
@@ -208,13 +144,22 @@ static int addAppsLegacyList(struct app_info_linked **appsLinkedList)
     count = 0;
     cur = configApps->head;
     while (cur != NULL) {
-        app = malloc(sizeof(*app));
+        if (*appsLinkedList == NULL) {
+            *appsLinkedList = malloc(sizeof(struct app_info_linked));
+            app = *appsLinkedList;
+            app->next = NULL;
+        } else {
+            app = malloc(sizeof(struct app_info_linked));
+            if (app != NULL) {
+                app->next = *appsLinkedList;
+                *appsLinkedList = app;
+            }
+        }
+
         if (app == NULL) {
             LOG("APPSUPPORT unable to allocate memory.\n");
             break;
         }
-        app->next = *appsLinkedList;
-        *appsLinkedList = app;
 
         strncpy(app->app.title, cur->key, APP_TITLE_MAX + 1);
         app->app.title[APP_TITLE_MAX] = '\0';
@@ -241,7 +186,6 @@ static int addAppsLegacyList(struct app_info_linked **appsLinkedList)
         }
 
         app->app.legacy = 1;
-        app->app.mmceVcd = 0;
         count++;
         cur = cur->next;
     }
@@ -256,13 +200,22 @@ static int appScanCallback(const char *path, config_set_t *appConfig, void *arg)
     const char *title, *boot, *argv1;
 
     if (configGetStr(appConfig, APP_CONFIG_TITLE, &title) != 0 && configGetStr(appConfig, APP_CONFIG_BOOT, &boot) != 0) {
-        app = malloc(sizeof(*app));
+        if (*appsLinkedList == NULL) {
+            *appsLinkedList = malloc(sizeof(struct app_info_linked));
+            app = *appsLinkedList;
+            app->next = NULL;
+        } else {
+            app = malloc(sizeof(struct app_info_linked));
+            if (app != NULL) {
+                app->next = *appsLinkedList;
+                *appsLinkedList = app;
+            }
+        }
+
         if (app == NULL) {
             LOG("APPSUPPORT unable to allocate memory.\n");
             return -1;
         }
-        app->next = *appsLinkedList;
-        *appsLinkedList = app;
 
         strncpy(app->app.title, title, APP_TITLE_MAX + 1);
         app->app.title[APP_TITLE_MAX] = '\0';
@@ -276,7 +229,6 @@ static int appScanCallback(const char *path, config_set_t *appConfig, void *arg)
         } else
             app->app.argv1[0] = '\0';
         app->app.legacy = 0;
-        app->app.mmceVcd = 0;
         return 0;
     } else {
         LOG("APPSUPPORT item has no boot/title.\n");
@@ -299,7 +251,6 @@ static int appUpdateItemList(item_list_t *itemList)
 
     // Scan devices for apps.
     appItemCount += oplScanApps(&appScanCallback, &appsLinkedList);
-    appItemCount += appAddMmceVcds(&appsLinkedList);
 
     // Generate apps list
     if (appItemCount > 0) {
@@ -317,11 +268,6 @@ static int appUpdateItemList(item_list_t *itemList)
         } else {
             LOG("APPSUPPORT unable to allocate memory.\n");
             appItemCount = 0;
-            while (appsLinkedList != NULL) {
-                appNext = appsLinkedList->next;
-                free(appsLinkedList);
-                appsLinkedList = appNext;
-            }
         }
     }
 
@@ -332,9 +278,10 @@ static int appUpdateItemList(item_list_t *itemList)
 
 static void appFreeList(void)
 {
-    free(appsList);
-    appsList = NULL;
-    appItemCount = 0;
+    if (appsList != NULL) {
+        appsList = NULL;
+        appItemCount = 0;
+    }
 }
 
 static int appGetItemCount(item_list_t *itemList)
@@ -356,11 +303,6 @@ static int appGetItemNameLength(item_list_t *itemList, int id)
    The path is used immediately, before a subsequent call to appGetItemStartup(). */
 static char *appGetItemStartup(item_list_t *itemList, int id)
 {
-    if (appsList[id].mmceVcd) {
-        static char artKey[sizeof(MMCE_POPS_DIR) + APP_ARGV1_MAX];
-        snprintf(artKey, sizeof(artKey), "%s%s", MMCE_POPS_DIR, appsList[id].argv1);
-        return artKey;
-    }
     if (appsList[id].legacy) {
         struct config_value_t *cur = appGetConfigValue(id);
         return appGetELFName(cur->val);
@@ -371,8 +313,6 @@ static char *appGetItemStartup(item_list_t *itemList, int id)
 
 static void appDeleteItem(item_list_t *itemList, int id)
 {
-    if (appsList[id].mmceVcd)
-        return;
     if (appsList[id].legacy) {
         struct config_value_t *cur = appGetConfigValue(id);
         unlink(cur->val);
@@ -390,8 +330,6 @@ static void appRenameItem(item_list_t *itemList, int id, char *newName)
 {
     char value[256];
 
-    if (appsList[id].mmceVcd)
-        return;
     if (appsList[id].legacy) {
         struct config_value_t *cur = appGetConfigValue(id);
 
@@ -417,132 +355,14 @@ static void appRenameItem(item_list_t *itemList, int id, char *newName)
     appForceUpdate = 1;
 }
 
-static int appFileExists(const char *path)
-{
-    int fd = open(path, O_RDONLY);
-    if (fd < 0)
-        return 0;
-    int size = getFileSize(fd);
-    close(fd);
-    return size > 0;
-}
-
-static int appMatchPopsDriver(const char *path, int expectedSize, u32 expectedCRC)
-{
-    int fd = open(path, O_RDONLY);
-    if (fd < 0)
-        return 0;
-
-    u8 buffer[1024];
-    u32 crc = crc32(0, Z_NULL, 0);
-    int count, total = 0;
-    while ((count = read(fd, buffer, sizeof(buffer))) > 0) {
-        total += count;
-        if (total > expectedSize)
-            break;
-        crc = crc32(crc, buffer, count);
-    }
-    close(fd);
-    return count == 0 && total == expectedSize && crc == expectedCRC;
-}
-
-static void appLaunchMmceVcd(const char *vcd, const char *existingElf)
-{
-    char path[256], selector[256];
-    size_t length = strlen(vcd);
-    if (length <= 4 || strcasecmp(vcd + length - 4, ".VCD") != 0 ||
-        strcspn(vcd, "/\\:") != length) {
-        guiMsgBox(_l(_STR_MMCE_POPS_VCD_MISSING), 0, NULL);
-        return;
-    }
-
-    int selectorLength = snprintf(selector, sizeof(selector), POPSTARTER_SELECTOR "%.*s.ELF", (int)length - 4, vcd);
-    if (selectorLength >= sizeof(selector) || snprintf(path, sizeof(path), MMCE_POPS_DIR "%s", vcd) >= sizeof(path)) {
-        guiMsgBox(_l(_STR_MMCE_POPS_NAME_TOO_LONG), 0, NULL);
-        return;
-    }
-
-    ioBlockOps(1);
-    const char *error = NULL;
-
-    if (!appFileExists(path)) {
-        error = _l(_STR_MMCE_POPS_VCD_MISSING);
-        goto failed;
-    }
-
-    const char *elf = MMCE_POPS_DIR "POPSTARTER.ELF";
-    if (!appFileExists(elf)) {
-        if (existingElf == NULL || !appFileExists(existingElf)) {
-            error = _l(_STR_MMCE_POPS_ELF_MISSING);
-            goto failed;
-        }
-        elf = existingElf;
-    }
-
-    if (!appFileExists(MMCE_POPS_DIR "POPS_IOX.PAK")) {
-        error = _l(_STR_MMCE_POPS_FILES_MISSING);
-        goto failed;
-    }
-
-    const char *usbd = "mc0:/POPSTARTER/usbd.irx";
-    const char *usbhdfsd = "mc0:/POPSTARTER/usbhdfsd.irx";
-    if (!appFileExists(usbd) || !appFileExists(usbhdfsd)) {
-        error = _l(_STR_MMCE_POPS_DRIVERS_MISSING);
-        goto failed;
-    }
-
-    if (strlen(elf) + strlen(selector) + 2 > 256) {
-        error = _l(_STR_MMCE_POPS_NAME_TOO_LONG);
-        goto failed;
-    }
-
-    // Identify the slot 1 driver from ps2-mmce/mmceman's POPS4MMCE_OPEN_TEST_BUILD001.zip.
-    if (!appMatchPopsDriver(usbd, 11841, 0xba780630) || !appMatchPopsDriver(usbhdfsd, 19733, 0x82149d87)) {
-        ioBlockOps(0);
-        if (!guiMsgBox(_l(_STR_MMCE_POPS_DRIVERS_UNKNOWN), 1, NULL))
-            return;
-    }
-
-    deinit(UNMOUNT_EXCEPTION, MMCE_MODE);
-    sysLaunchPopstarter(elf, selector);
-    return;
-
-failed:
-    ioBlockOps(0);
-    guiMsgBox(error, 0, NULL);
-}
-
 static void appLaunchItem(item_list_t *itemList, int id, config_set_t *configSet)
 {
     int fd;
     char filename[256];
     const char *argv1;
 
-    if (appsList[id].mmceVcd) {
-        char vcd[APP_ARGV1_MAX + 1];
-        strcpy(vcd, appsList[id].argv1);
-        appLaunchMmceVcd(vcd, NULL);
-        return;
-    }
-
     // Retrieve configuration set by appGetConfig()
-    if (!configGetStrCopy(configSet, CONFIG_ITEM_STARTUP, filename, sizeof(filename)))
-        return;
-
-    if (!strncmp(filename, "mmce0:", 6) || !strncmp(filename, "mmce1:", 6)) {
-        const char *name = appGetELFName(filename);
-        size_t length = strlen(name);
-        if (length > 7 && !strncasecmp(name, "XX.", 3) && !strcasecmp(name + length - 4, ".elf")) {
-            if (filename[4] != '0') {
-                guiMsgBox(_l(_STR_MMCE_POPS_SLOT_ONE), 0, NULL);
-                return;
-            }
-            char vcd[256];
-            snprintf(vcd, sizeof(vcd), "%.*s.VCD", (int)length - 7, name + 3);
-            appLaunchMmceVcd(vcd, filename);
-            return;
-        }
-    }
+    configGetStrCopy(configSet, CONFIG_ITEM_STARTUP, filename, sizeof(filename));
 
     // If no device number is specified use mass? to auto find device number
     const char *oldPrefix = "mass:";
@@ -590,7 +410,7 @@ static void appLaunchItem(item_list_t *itemList, int id, config_set_t *configSet
             argc = 1;
         }
 
-        deinit(UNMOUNT_EXCEPTION, mode);
+        deinit(UNMOUNT_EXCEPTION, mode); // CAREFUL: deinit will call appCleanUp, so configApps/cur will be freed
         LoadELFFromFileWithPartition(filename, partition, argc, argv);
     } else
         guiMsgBox(_l(_STR_ERR_FILE_INVALID), 0, NULL);
@@ -601,16 +421,7 @@ static config_set_t *appGetConfig(item_list_t *itemList, int id)
     config_set_t *config;
     char tmp[8];
 
-    if (appsList[id].mmceVcd) {
-        char path[256];
-        snprintf(path, sizeof(path), MMCE_POPS_DIR "%s", appsList[id].argv1);
-        config = configAlloc(0, NULL, NULL);
-        configSetStr(config, CONFIG_ITEM_NAME, appsList[id].argv1);
-        configSetStr(config, CONFIG_ITEM_LONGNAME, appsList[id].title);
-        configSetStr(config, CONFIG_ITEM_STARTUP, path);
-        configSetStr(config, CONFIG_ITEM_MEDIA, "PS1");
-        configSetStr(config, CONFIG_ITEM_FORMAT, "VCD");
-    } else if (appsList[id].legacy) {
+    if (appsList[id].legacy) {
         struct config_value_t *cur = appGetConfigValue(id);
         config = oplGetLegacyAppsInfo(appGetELFName(cur->val));
         configRead(config);
@@ -646,19 +457,7 @@ static config_set_t *appGetConfig(item_list_t *itemList, int id)
 
 static int appGetImage(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
 {
-    char device[8] = "", *startup;
-
-    if (isRelative && !strcmp(folder, "ART") && !strncmp(value, MMCE_POPS_DIR, sizeof(MMCE_POPS_DIR) - 1)) {
-        item_list_t *mmce = mmceGetObject(1);
-        const char *vcd = value + sizeof(MMCE_POPS_DIR) - 1;
-        size_t length = strlen(vcd);
-        if (mmce && length > 4 && !strcasecmp(vcd + length - 4, ".vcd") && length - 4 <= APP_ARGV1_MAX) {
-            char name[APP_ARGV1_MAX + 1];
-            memcpy(name, vcd, length - 4);
-            name[length - 4] = '\0';
-            return mmce->itemGetImage(mmce, folder, isRelative, name, suffix, resultTex, psm);
-        }
-    }
+    char device[8], *startup;
 
     startup = appGetBoot(device, sizeof(device), value);
 
@@ -685,15 +484,17 @@ static void appCleanUp(item_list_t *itemList, int exception)
         LOG("APPSUPPORT CleanUp\n");
 
         appFreeList();
-        if (configApps)
-            configFree(configApps);
-        configApps = NULL;
     }
 }
 
+// This may be called, even if appInit() was not.
 static void appShutdown(item_list_t *itemList)
 {
-    appCleanUp(itemList, NO_EXCEPTION);
+    if (appItemList.enabled) {
+        LOG("APPSUPPORT Shutdown\n");
+
+        appFreeList();
+    }
 }
 
 static item_list_t appItemList = {

@@ -29,9 +29,9 @@ OPL은 `lang_Korean.lng`와 `font_Korean.ttf`를 다음 위치에서 찾습니�
 
 ### PS1 게임
 
-PS1은 지금처럼 USB에서 실행하는 방법을 권장합니다. MMCE 실행을 시험하면서 [MMCEMAN for POPSTARTER 테스트 드라이버](https://github.com/ps2-mmce/mmceman/releases/tag/popstarter)의 `usbd.irx`와 `usbhdfsd.irx`를 `mc0:/POPSTARTER/`에 넣었다면, 지우거나 백업해 둔 원래 파일로 되돌려야 USB에서 다시 실행됩니다.
+테스트 빌드 4부터 PS1 처리는 원래 OPL과 같습니다. 응용프로그램 목록과 실행 방식을 바꾸지 않으므로 USB에서 쓰던 PS1 항목을 그대로 사용합니다.
 
-Gen2 microSD의 `POPS/`에 VCD가 있으면 응용프로그램 메뉴에 `[PS1] 게임명` 항목이 보입니다. 이 항목은 위 테스트 드라이버가 있어야 실행되는 실험 기능입니다.
+테스트 빌드 1~3에서 MMCE 실행을 시험하면서 [MMCEMAN for POPSTARTER 테스트 드라이버](https://github.com/ps2-mmce/mmceman/releases/tag/popstarter)의 `usbd.irx`와 `usbhdfsd.irx`를 `mc0:/POPSTARTER/`에 넣었다면, 지우거나 백업해 둔 원래 파일로 되돌려야 USB에서 다시 실행됩니다.
 
 ## 소스 및 출처
 

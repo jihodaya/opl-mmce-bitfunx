@@ -85,7 +85,7 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		iremsndpatch.o apemodpatch.o f2techioppatch.o cleareffects.o resetspu.o \
 		libsd.o audsrv.o
 
-EECORE_OBJS = ee_core.o popsloader.o ioprp.o util.o \
+EECORE_OBJS = ee_core.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
 		bdm_cdvdman.o bdm_ata_cdvdman.o IOPRP_img.o smb_cdvdman.o \
 		hdd_cdvdman.o hdd_hdpro_cdvdman.o mmce_cdvdman.o cdvdfsv.o \
@@ -273,7 +273,6 @@ clean:	download_lwNBD
 	rm -fr $(MAPFILE) $(EE_BIN) $(EE_BIN_PACKED) $(EE_BIN_STRIPPED) $(EE_VPKD).* $(EE_OBJS_DIR) $(EE_ASM_DIR)
 	echo "-EE core"
 	$(MAKE) -C ee_core clean
-	$(MAKE) -C popsloader clean
 	echo "-IOP core"
 	echo " -imgdrv"
 	$(MAKE) -C modules/iopcore/imgdrv clean
@@ -396,12 +395,6 @@ ee_core/ee_core.elf: ee_core
 
 $(EE_ASM_DIR)ee_core.c: ee_core/ee_core.elf | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ eecore_elf
-
-popsloader/popsloader.elf: popsloader/loader.c popsloader/Makefile popsloader/linkfile
-	$(MAKE) -C popsloader
-
-$(EE_ASM_DIR)popsloader.c: popsloader/popsloader.elf | $(EE_ASM_DIR)
-	$(BIN2C) $< $@ popsloader_elf
 
 $(EE_ASM_DIR)udnl.c: $(UDNL_OUT) | $(EE_ASM_DIR)
 	$(BIN2C) $(UDNL_OUT) $@ udnl_irx

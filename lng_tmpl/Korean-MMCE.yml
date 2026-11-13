@@ -31,10 +31,3 @@ translations:
   HINT_MMCEIGR_SLOT: 게임 중 재시작하면 선택한 슬롯을 부팅 카드로 전환합니다.
   MMCE_ADVANCED: 고급 설정
   MMCE_SETTINGS: MMCE 설정
-  MMCE_POPS_VCD_MISSING: MMCE 카드의 POPS 폴더에 PS1 게임 파일이 없습니다.
-  MMCE_POPS_ELF_MISSING: MMCE 카드의 POPS 폴더에 POPSTARTER.ELF를 넣으세요.
-  MMCE_POPS_FILES_MISSING: MMCE 카드의 POPS 폴더에 POPS_IOX.PAK를 넣으세요.
-  MMCE_POPS_DRIVERS_MISSING: mc0:/POPSTARTER/에 MMCE용 IRX 파일 두 개를 넣으세요.
-  MMCE_POPS_DRIVERS_UNKNOWN: MMCE 테스트판과 다른 IRX입니다. 실행할까요?
-  MMCE_POPS_SLOT_ONE: MMCE용 POPStarter 테스트 드라이버는 슬롯 1을 읽습니다.
-  MMCE_POPS_NAME_TOO_LONG: VCD 파일명이나 POPStarter 경로를 줄이세요.

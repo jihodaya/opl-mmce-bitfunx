@@ -21,7 +21,6 @@ int sysInitDECI2(void);
 void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdvdman_irx, void **cdvdman_irx, int size_mcemu_irx, void **mcemu_irx, int EnablePS2Logo, unsigned int compatflags);
 
 int sysExecElf(const char *path);
-void sysLaunchPopstarter(const char *elf, char *selector);
 int sysLoadModuleBuffer(void *buffer, int size, int argc, char *argv);
 int sysCheckMC(void);
 int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock);

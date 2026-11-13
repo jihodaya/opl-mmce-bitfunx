@@ -712,17 +712,3 @@ gui_strings:
   string: Advanced
 - label: MMCE_SETTINGS
   string: MMCE Settings
-- label: MMCE_POPS_VCD_MISSING
-  string: PS1 game file is missing from the MMCE card's POPS folder.
-- label: MMCE_POPS_ELF_MISSING
-  string: Put POPSTARTER.ELF in the MMCE card's POPS folder.
-- label: MMCE_POPS_FILES_MISSING
-  string: Put POPS_IOX.PAK in the MMCE card's POPS folder.
-- label: MMCE_POPS_DRIVERS_MISSING
-  string: Install the MMCE POPStarter IRX pair in mc0:/POPSTARTER/.
-- label: MMCE_POPS_DRIVERS_UNKNOWN
-  string: This IRX pair differs from the MMCE test release. Launch anyway?
-- label: MMCE_POPS_SLOT_ONE
-  string: The MMCE POPStarter test driver reads the card in slot 1.
-- label: MMCE_POPS_NAME_TOO_LONG
-  string: Shorten the VCD filename or the POPStarter path.
