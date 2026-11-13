@@ -1,419 +1,168 @@
-# Open PS2 Loader
+# JJome OPL
 
-![logo](https://github.com/ps2homebrew/Open-PS2-Loader/blob/master/gfx/logo.png)
+Bitfunx PSxMemCard Gen2(MMCE)에서 PS2 게임을 편하게 쓰도록 고친 [Open PS2 Loader](https://github.com/ps2homebrew/Open-PS2-Loader)(OPL)입니다. 한국어 메뉴를 넣고, Gen2 microSD에 있는 게임의 표지와 한국어 파일을 더 잘 찾도록 했습니다. OPL 정보 화면에는 `JJome OPL <버전>`으로 표시됩니다.
 
-[JJome OPL 설치 안내 (Bitfunx PSxMemCard Gen2)](notes/bitfunx-mmce-ko.md)
+> [!NOTE]
+> 아직 테스트 빌드입니다. 지금 배포하는 버전은 [테스트 빌드 6](https://github.com/jihodaya/opl-mmce-bitfunx/releases/tag/jjome-opl-test-6)이고, 정보 화면에는 `JJome OPL v1.2.0-Beta-2253-7c791de`로 나옵니다.
 
-Copyright 2013, Ifcaro & jimmikaelkael
-Licensed under Academic Free License version 3.0
-Review the LICENSE file for further details.
+**[내려받기 (릴리스)](https://github.com/jihodaya/opl-mmce-bitfunx/releases)**
 
-[![CI](https://github.com/ps2homebrew/Open-PS2-Loader/actions/workflows/compilation.yml/badge.svg?branch=master)](https://github.com/ps2homebrew/Open-PS2-Loader/actions/workflows/compilation.yml)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/99032a6a180243bfa0d0e23efeb0608d)](https://www.codacy.com/gh/ps2homebrew/Open-PS2-Loader/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ps2homebrew/Open-PS2-Loader&amp;utm_campaign=Badge_Grade)
-[![Discord](https://img.shields.io/discord/652861436992946216?style=flat&logo=Discord)](https://discord.gg/CVFUa9xh6B)
-[![Mega](https://img.shields.io/badge/Mega-%23D90007.svg?style=flat&logo=Mega&logoColor=white)](https://mega.nz/folder/Ndwi1bAK#oLWNhH_g-h0p4BoT4c556A)
+## 주요 기능
 
-## Introduction
+- **한국어 메뉴**: 기존 OPL 한국어 번역에 빠져 있던 MMCE 메뉴와 화면 설정 문구를 더했습니다. 한국어 글꼴(UnTaza)도 함께 들어 있습니다.
+- **한국어 파일 자동 찾기**: ELF와 같은 폴더에 둔 `LNG/`를 바로 읽습니다. 원래 OPL은 메모리카드의 `OPL/`이나 장치 루트의 `LNG/`만 찾습니다.
+- **Gen2 게임 표지**: `ART/<게임 ID>_COV.png`뿐 아니라 `.jpg`, `.jpeg`, 그리고 `_COV`가 없는 파일 이름도 읽습니다. MMCE 기본 폴더를 설정했으면 그 폴더와 카드 루트의 `ART/`를 모두 찾습니다.
+- **디스크 그림**: `ART/<게임 ID>_ICO.png`가 있을 때만 표시하고, 없으면 빈 CD 그림을 그리지 않습니다.
+- **표지 읽기 안정성**: 잘린 PNG와 흑백 PNG를 안전하게 처리하고, 메모리가 모자랄 때 표지 캐시가 꼬이지 않도록 고쳤습니다.
+- **게임별 메모리카드**: 게임을 실행할 때 게임 ID를 Gen2에 보내므로, Gen2가 게임마다 전용 메모리카드로 바꿉니다. 원래 MMCE OPL에 있는 기능이며, 이 빌드는 설정과 관계없이 항상 보냅니다.
+- **PS1 게임**: 원래 OPL과 똑같이 동작합니다. 바꾼 것이 없습니다.
 
-Open PS2 Loader (OPL) is a 100% Open source game and application loader for
-the PS2 and PS3 units.
+## 준비물
 
-It supports five categories of devices:
+- FMCB 등으로 ELF를 실행할 수 있는 PS2
+- Bitfunx PSxMemCard Gen2와 [sd2psXtd 1.4.0](https://github.com/sd2psXtd/firmware/releases/tag/1.4.0) 펌웨어
+- Gen2 microSD에 넣은 PS2 게임 ISO. DVD 게임은 `DVD/`, CD 게임은 `CD/` 폴더에 넣습니다. MMCE 기본 폴더를 설정했다면 그 폴더 아래에 둡니다.
 
-1. USB mass storage devices;
-2. MX4SIO (SD card connected to memory card port via adapter);
-3. iLink (SBP2 compliant storage devices via IEE1394);
-4. SMBv1 shares;
-5. ATA/IDE HDDs.
+## 설치
 
-All of the devices mentioned above support multiple file formats, including:
+### 1. 파일 복사
 
-- ISO;
-- ZSO (Compressed ISO);
-- USB Extreme (ul);
-- Homebrews (Apps) in ELF format;
-- HDDs support the HDLoader format.
+릴리스의 zip을 풀면 다음 파일이 나옵니다.
 
-It's now the most compatible homebrew loader.
+| 파일 | 설명 |
+| --- | --- |
+| `JJome-OPL.ELF` | OPL 본체 |
+| `LNG/lang_Korean.lng` | 한국어 문구 |
+| `LNG/font_Korean.ttf` | 한국어 글꼴 (UnTaza) |
+| `LNG/UnTaza-COPYING.txt` | 글꼴 라이선스 |
+| `bitfunx-mmce-ko.md` | 간단한 설치 안내 |
+| `SHA256SUMS.txt` | 파일 확인용 SHA-256 |
 
->[!NOTE]
-OPL is developed continuously - anyone can contribute improvements to the project due to its open-source nature.
+`JJome-OPL.ELF`와 `LNG` 폴더를 **같은 폴더에 그대로** 복사합니다. 기존 OPL을 덮어쓰지 말고 따로 두세요.
 
-You can visit the Open PS2 Loader forum at:\
-<https://www.psx-place.com/forums/open-ps2-loader-opl.77/>
+- **FMCB 첫 화면에서 실행하려면** 메모리카드에 둡니다. 예: `mc0:/APPS/JJome-OPL/`. FMCB는 Gen2 microSD(`mmce0:`)에 있는 파일을 실행하지 못합니다. wLaunchELF로 메모리카드에 복사하면 됩니다.
+- **메모리카드 공간이 부족하면** `LNG` 폴더만 Gen2 microSD 루트의 `LNG/`에 넣어도 됩니다. 이때는 MMCE 게임 목록이 열린 뒤에 언어 목록에 Korean이 나타납니다.
+- **wLaunchELF로만 실행한다면** Gen2 microSD의 `APPS/JJome-OPL/`에 둬도 됩니다.
 
-You can report compatibility game problems at:\
-<https://www.psx-place.com/threads/open-ps2-loader-game-bug-reports.19401/>
+### 2. OPL 설정
 
-For an updated compatibility list, you can visit the OPL-CL site at:\
-<http://sx.sytes.net/oplcl/games.aspx>
+1. JJome OPL을 실행합니다.
+2. **설정 → MMCE 설정**에서 **MMCE 시작 모드**를 자동으로 바꿉니다.
+3. **설정 → 화면 설정 → 언어**에서 `Korean`을 고릅니다.
+4. 설정을 저장합니다.
 
-<details>
-  <summary> <b> Release types </b> </summary>
-<p>
+PS1 게임이나 다른 앱을 OPL에서 실행하려면 **응용프로그램 시작 모드**도 켭니다.
 
-Open PS2 Loader bundle included several types of the same OPL version. These
-types come with more or fewer features included.
+### 3. 표지와 디스크 그림
 
-| Type (can be a combination) | Description                                                                             |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| `Release`                   | Regular OPL release with GSM, IGS, PADEMU, VMC, PS2RD Cheat Engine & Parental Controls. |
-| `DTL_T10000`                | OPL for TOOLs (DevKit PS2)                                                              |
-| `IGS`                       | OPL with InGame Screenshot feature.                                                     |
-| `PADEMU`                    | OPL with Pad Emulation for DS3 & DS4.                                                   |
-| `RTL`                       | OPL with the right to left language support.                                            |
+Gen2 microSD의 `ART/` 폴더에 게임 ID 이름으로 넣습니다. 게임 ID는 `SLUS_123.45`처럼 ISO 이름 앞부분이나 OPL 게임 정보에서 확인할 수 있습니다.
 
-</p>
-</details>
+| 그림 | 파일 이름 (찾는 순서) |
+| --- | --- |
+| 표지 | `<게임 ID>_COV.png` → `.jpg` → `.jpeg` → `<게임 ID>.png` → `.jpg` → `.jpeg` |
+| 디스크 | `<게임 ID>_ICO.png` (없으면 표시하지 않음) |
+| 그 밖의 그림 | 원래 OPL과 같음 (`_BG`, `_SCR` 등) |
 
-<details>
-  <summary> <b> How to use </b> </summary>
-<p>
+MMCE 기본 폴더를 설정했다면 그 폴더의 `ART/`를 먼저 보고, 없으면 카드 루트의 `ART/`를 봅니다. 디스크 그림 변경은 OPL 기본 테마에만 적용됩니다. `THM/`의 다른 테마를 쓰면 그 테마 설정을 따릅니다.
 
-OPL uses the following directory tree structure across HDD, SMB, and
-USB modes:
+### 4. FMCB 첫 화면에 등록
 
-| Folder | Description                                          | Modes       |
-| ------ | ---------------------------------------------------- | ----------- |
-| `CD`   | for games on CD media - i.e. blue-bottom discs       | USB and SMB |
-| `DVD`  | for DVD5 and DVD9 images (if filesystem supports +4gb files) | USB and SMB |
-| `VMC`  | for Virtual Memory Card images - from 8MB up to 64MB | all         |
-| `CFG`  | for saving per-game configuration files              | all         |
-| `ART`  | for game art images                                  | all         |
-| `THM`  | for themes support                                   | all         |
-| `LNG`  | for translation support                              | all         |
-| `CHT`  | for cheats files                                     | all         |
-| `APPS`  | for ELF files                                       | all         |
+FMCB 설정 프로그램(`mc0:/SYS-CONF/FMCB_CFG.ELF`)을 실행합니다.
 
-OPL will automatically create the above directory structure the first time you launch it and enable your favorite device.
+1. **Configure OSDSYS options...** → **Configure Item**에서 빈 항목을 고릅니다.
+2. **Name**에 `JJome OPL`, **Path1**에 `mc0:/APPS/JJome-OPL/JJome-OPL.ELF`를 넣습니다.
+3. 돌아가서 **Save CNF to MC0**로 저장합니다.
 
-For HDDs formatted with the APA partition scheme, OPL will read `hdd0:__common/OPL/conf_hdd.cfg` for the config entry `hdd_partition` to use as your OPL partition.
-If not found a config file, a 128Mb `+OPL` partition will be created. You can edit the config if you wish to use/create a different partition.
-All partitions created by OPL will be 128Mb (it is not recommended to enlarge partitions as it will break LBAs, instead remove and recreate manually with uLaunchELF at a larger size if needed).
-	
-HDDs are also able to be formatted as exFAT to avoid the 2TB limitation.  Please see below in the `HDD` section for more details on this configuration.
+`mc0:/SYS-CONF/FREEMCB.CNF`를 직접 고쳐도 됩니다. `N`은 쓰지 않는 번호로 바꾸세요.
 
-</p>
-</details>
-
-<details>
-  <summary> <b> USB/MX4SIO/iLink </b> </summary>
-<p>
-
-Supported file systems:
-EXFAT (since OPL v1.2.0 beta - rev1880) and FAT32, both use the MBR partition table
-
-Game files should be *ideally* defragmented either file by file or by whole drive.
-
-> NOTE: Partial file fragmentation is supported (up to 64 fragments!) since OPL v1.2.0 beta - rev1893
-
-If you choose to use the FAT32 file system, games larger than 4gb must use USBExtreme format (see OPLUtil or USBUtil programs).
-
-We do **not** recommend using any defrag programs. The best way for defragmenting - copy all files to pc, format USB, copy all files back.
-Repeat it once you faced defragmenting problem again.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> SMB </b> </summary>
-<p>
-
-For loading games by SMB protocol, you need to share a folder (ex: PS2SMB)
-on the host machine or NAS device and make sure that it has full read and
-write permissions. USB Advance/Extreme format is optional - \*.ISO images
-are supported using the folder structure above.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> HDD </b> </summary>
-<p>
-	
-For PS2, 48-bit LBA internal HDDs are supported. The HDD can be formatted as:
-
-- APA partitioning with PFS filesystem (up to 2TB)
-	- OPL will create the `+OPL` partition on the HDD.  To avoid this, you can create a text file at the location `hdd0:__common:pfs:OPL/conf_hdd.txt` that contains the preferred partition name (for example `__common`).
-- MBR partitioning (up to 2TB) or GPT partitioning (unlimited) with the exFAT filesystem
-	- Files should be added contiguously or synchronously to avoid fragmentation. For example, drag and drop files one at a time, or ensure that files are added sequentially.
-	- When formatting drives for the exFAT filesystem, please make sure the `Allocation unit size` is set to `Default`.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> APPS </b> </summary>
-<p>
-
-There are two methods to add apps to OPL.
-
-### conf_apps.cfg method (Legacy)
-
-Composed of two parts separated by an "=" sign\
-Where, the first part consists of the name that will appear in your OPL apps list.\
-And the second part consists of the path to the ELF.
-
-To begin:
-
-1. Create a text file called `conf_apps.cfg`.
-2. In this file, put the name you want to appear in the list of apps, followed by the "=" sign.
-3. Put the device identifier
-(for a USB device it would be `mass:`, for MemoryCard it would be `mc:`, and so on for other devices)\
-And finally path to the desired ELF
-
-> NOTE: Be careful to enter the exact path, OPL is case sensitive
-
-The structure should look like this:
-
-```
-My App Name=mass:APPS/MYAPP.ELF
+```ini
+name_OSDSYS_ITEM_N = JJome OPL
+path1_OSDSYS_ITEM_N = mc0:/APPS/JJome-OPL/JJome-OPL.ELF
 ```
 
-let's use OPL itself as an example:
+## 한국어 파일을 찾는 위치
 
-```
-OPL=mass:APPS/OPNPS2LD.ELF
-```
+OPL은 `lang_Korean.lng`와 `font_Korean.ttf`를 다음 위치에서 찾습니다. 두 파일은 항상 같은 폴더에 있어야 합니다.
 
-With this method the ELFs don't need to be in the APPS folder, but keeping them there helps keep everything organized.
+1. ELF가 있는 폴더의 `LNG/`, 또는 ELF가 있는 폴더 자체
+2. 메모리카드의 `OPL/` 폴더 (`mc0:/OPL/lang_Korean.lng`)
+3. Gen2 microSD 루트의 `LNG/`, MMCE 기본 폴더를 설정했다면 그 폴더의 `LNG/`
+4. USB 등 BDM 장치 루트의 `LNG/`
 
-the conf_apps.cfg file must be in the OPL folder, on your MemoryCard.\
-Or at the root of the storage device
+같은 언어 파일이 여러 곳에 있으면 먼저 찾은 파일을 씁니다. 메모리카드를 가장 먼저 찾고, Gen2와 USB는 게임 목록을 읽을 때 찾습니다. 다른 버전의 `lang_Korean.lng`가 메모리카드 `OPL/`에 남아 있으면 지우세요. 문구 순서가 달라 메뉴 글자가 엉뚱하게 나옵니다.
 
+## 게임 중 저장 공간이 부족할 때
 
-### title.cfg method
+Gen2는 게임마다 전용 메모리카드를 쓰므로 보통은 부족하지 않습니다. 부족하다는 메시지가 나오면 게임을 끄지 말고 저장 화면에서 다음처럼 합니다.
 
-Also composed of two parts, or to be more exact, two lines
-Where, in the first line we put the name that will appear in the list of apps, and in the second line we put the ELF
+1. Gen2의 **오른쪽 버튼을 짧게** 눌러 다음 채널로 바꿉니다. 왼쪽 버튼을 짧게 누르면 이전 채널입니다. 채널마다 별도의 메모리카드이며 기본 8개입니다.
+2. 게임 저장 화면에서 메모리카드를 다시 고른 뒤 저장합니다.
+3. 저장한 채널 번호를 기억해 둡니다. 나중에 불러올 때 그 채널로 바꿔야 합니다.
 
-To begin:
+저장하는 도중에는 버튼을 누르지 마세요. 카드가 바뀐 것을 인식하지 못하는 게임이라면 2번 슬롯에 일반 메모리카드를 꽂고 그쪽에 저장합니다. 버튼 동작은 [sd2psx 사용법](https://sd2psx.net/navigation.html)을 참고하세요.
 
-1. In the APPS folder, create a new folder with the name of the ELF you want to add
-2. In this new folder, place the ELF and create also a text file called `title.cfg`.
-3. In that file, add the following instructions:
+## PS1 게임
 
-```
-title=My App Name
-boot=MYAPP.ELF
-```
+PS1 처리는 원래 OPL과 같습니다. USB의 `POPS/`에 `POPSTARTER.ELF`를 `XX.게임명.ELF`로 복사해 두는 기존 방식을 그대로 씁니다.
 
-Using OPL again as an example:
+- 게임 중 리셋(IGR)을 누르면 OPL이 아니라 `mc0:/BOOT/BOOT.ELF`(보통 wLaunchELF)로 나갑니다. POPStarter가 정하는 동작이라 OPL에서 바꿀 수 없습니다.
+- 일부 게임이 버벅이는 것은 대개 POPStarter 호환성 문제입니다. 자세한 설정은 [POPStarter USB 문서](https://bitbucket.org/ShaolinAssassin/popstarter-documentation-stuff/wiki/usb-mode)를 참고하세요.
+- PS1 게임을 표지와 함께 목록으로 고르고 싶다면 [POPSLoader](https://github.com/NathanNeurotic/POPSLoader)를 쓸 수 있습니다. 게임마다 `XX.*.ELF`를 만들 필요가 없습니다.
 
-```
-title=Open PS2 Loader
-boot=OPNPS2LD.ELF
-```
+## 알려진 문제와 확인 상태
 
-I would like to emphasize that in this method it is necessary that the ELF file and the title.cfg file must be in a folder, within the APPS folder.
+| 항목 | 상태 |
+| --- | --- |
+| 한국어 메뉴 | 실기 확인 |
+| Gen2 표지 표시 | 실기 확인 |
+| 디스크 그림 숨김 (테스트 빌드 6) | 실기 확인 전 |
+| PS1 IGR이 wLaunchELF로 나감 | POPStarter 동작, 수정 불가 |
+| 일부 PS1 게임 버벅임 | POPStarter 호환성 문제로 추정 |
 
-> NOTE: In both methods, it is necessary attention to the file names, because, as already mentioned: OPL is case sensitive.
+## 직접 빌드하기
 
-</p>
-</details>
+Linux 또는 WSL에 [PS2SDK](https://github.com/ps2dev/ps2sdk), [gsKit](https://github.com/ps2dev/gsKit), PS2SDK Ports(libpng, libjpeg)를 설치한 뒤 다음 순서로 빌드합니다.
 
-<details>
-  <summary> <b> Cheats </b> </summary>
-<p>
-
-OPL accepts `.cht` files in PS2RD format. Each cheat file corresponds to a specific game and must be stored in the `CHT` directory on your device.
-Cheats are structured as hexadecimal codes, with proper headers as descriptions to identify their function.
-You can activate cheats via OPL's graphical interface. Navigate to a games settings, enable cheats and select the desired mode.
-
-### cheat modes
-
-  * Auto Select Cheats:  
-This mode will enable and apply all cheat codes in your `.cht` file to your game automatically.
-
-  * Select Game Cheats:  
-When enabled a cheat selection menu will appear when you launch a game. You can navigate the menu and disable undesired cheats for this launch session. `Mastercode`s cannot be disabled as they are required for any other cheats to be applied.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> NBD Server </b> </summary>
-<p>
-
-OPL now uses an [NBD](https://en.wikipedia.org/wiki/Network_block_device) server to share the internal hard drive, instead of HDL server.
-NBD is [formally documented](https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md) and developed as a collaborative open standard.
-
-The current implementation of the server is based on [lwNBD](https://github.com/bignaux/lwNBD), go there to contribute on the NBD code itself.
-
-The main advantage of using NBD is that the client will expose the drive to your operating system in a similar way as a directly attached drive.
-This means that any utility that worked with the drive when it was directly attached should work the same way with NBD.
-
-OPL currently only supports exporting (sharing out) the PS2's drive.
-
-You can use `hdl-dump`, `pfs-shell`, or even directly edit the disk in a hex editor.
-
-For example, to use `hdl_dump` to install a game to the HDD:
-
-  * Connect with your choosen client (OS specific)
-  * Run `hdl_dump inject_dvd ps2/nbd "Test Game" ./TEST.ISO`
-  * Disconnect the client.
-
-To use the NBD server in OPL:
-
-  * Grab the latest beta version (OPL 1.1.0 (current stable) has some bugs in the NBD server) - go to the [Releases](https://github.com/ps2homebrew/Open-PS2-Loader/releases) section and grab the one at the top.
-  * Ensure OPL is configured with an IP address (either static or DHCP).
-  * Open the menu and select "Start NBD server". Once it's ready, it should update the screen to say "NBD Server running..."
-  * Now you can connect with any of the following NBD clients.
-
-### nbd-client
-
-Supported: Linux, [Windows with WSL and custom kernel](https://github.com/microsoft/WSL/issues/5968)
-
-nbd-client requires nbd kernel support. If it isn't loaded,
-`sudo modprobe nbd` will do.
-
-list available export:
-
-```sh
-nbd-client -l 192.168.1.45
+```bash
+make download_lwNBD
+make src/lang_internal.c include/lang_autogen.h
+make opl.elf
 ```
 
-connect:
+한국어 파일은 번역 저장소를 받은 뒤 만듭니다. `lng_tmpl/Korean-MMCE.yml`의 문구가 기존 번역 위에 덧씌워집니다.
 
-```sh
-nbd-client 192.168.1.45 /dev/nbd1
+```bash
+make download_lng
+make lng/lang_Korean.lng
 ```
 
-disconnect:
+배포용 ELF는 [PS2-Packer](https://github.com/ps2dev/ps2-packer)로 압축합니다.
 
-```sh
-nbd-client -d /dev/nbd1
-```
+## 원본과 바뀐 점
 
-You'll generally need sudo to run this commands in root or
-add your user to the right group usually "disk".
+[ps2-mmce/Open-PS2-Loader](https://github.com/ps2-mmce/Open-PS2-Loader)의 `mmce_support` 브랜치(`e554796`, 2025-11-24)를 바탕으로 합니다. OPL MMCE Beta 2 이후의 공식 OPL 수정(GCC 15 대응, MX4SIO 회귀 수정, VMC 그룹)과 MMCE 알람·대기 사이클 설정 제거가 들어 있습니다. 여기에 다음을 더했습니다.
 
-### nbdfuse
+- 최신 PS2SDK의 `iopfixup` 요구에 맞춘 공식 OPL 수정 [`656cb1f`](https://github.com/ps2homebrew/Open-PS2-Loader/commit/656cb1f7)
+- 공개 PS2SDK와 mmceman에 없는 `mmcesio2.irx` 로드를 빼고 Beta 2처럼 `mmceman.irx`만 로드
+- 위 [주요 기능](#주요-기능)의 표지, 한국어, 디스크 그림 변경
 
-Supported: Linux, Windows with WSL2
+주요 변경 파일은 `src/lang.c`, `src/mmcesupport.c`, `src/textures.c`, `src/texcache.c`, `misc/conf_theme_OPL.cfg`, `lng_tmpl/Korean-MMCE.yml`입니다.
 
-list available export:
+### 브랜치
 
-```sh
-nbdinfo --list nbd://192.168.1.45
-```
+| 브랜치 | 내용 |
+| --- | --- |
+| `main` | 최신 코드와 이 설명서 |
+| `bitfunx-mmce-next` | 개발 브랜치 |
+| `bitfunx-mmce` | 초기 테스트 코드. Gen2에서 PS1을 실행하려던 시도가 들어 있으며 지금은 쓰지 않습니다. |
 
-connect:
+### `gen2 펌웨어/sd2psx.uf2`
 
-```sh
-mkdir ps2
-nbdfuse ps2/ nbd://192.168.1.45 &
-```
+[sd2psXtd 1.4.0 공식 배포본](https://github.com/sd2psXtd/firmware/releases/tag/1.4.0)과 SHA-256이 같은 펌웨어입니다. 만든이가 사용하는 버전을 함께 보관한 것이며, 최신 펌웨어와 소스는 원 저장소에서 받으세요.
 
-disconnect:
+## 출처와 라이선스
 
-```sh
-umount ps2
-```
-
-### wnbd
-
-Supported: Windows
-
-[WNBD client](https://cloudbase.it/ceph-for-windows/).
-Install, reboot, open elevated (with Administrator rights) [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/windows-powershell/starting-windows-powershell?view=powershell-7.1#how-to-start-windows-powershell-on-earlier-versions-of-windows)
-
-connect:
-
-```sh
-wnbd-client.exe map hdd0 192.168.1.22
-```
-
-disconnect:
-
-```sh
-wnbd-client.exe unmap hdd0
-```
-
-### Mac OS
-
-Not supported.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> ZSO Format </b> </summary>
-<p>
-
-As of version 1.2.0, compressed ISO files in ZSO format is supported by OPL.
-
-To handle ZSO files, a python script (ziso.py) is included in the pc folder of this repository.
-It requires Python 3 and the LZ4 library:
-
-  ```sh
-pip install lz4
-```
-
-To compress an ISO file to ZSO:
-
-  ```sh
-python ziso.py -c 2 "input.iso" "output.zso"
-```
-
-To decompress a ZSO back to the original ISO:
-
-```sh
-python ziso.py -c 0 "input.zso" "output.iso"
-```
-
-You can copy ZSO files to the same folder as your ISOs and they will be detected by OPL.
-To install onto internal HDD, you can use the latest version of HDL-Dump.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> PS3 BC </b> </summary>
-<p>
-
-Currently, supported only [PS3 Backward Compatible](https://www.psdevwiki.com/ps3/PS2_Compatibility#PS2-Compatibility) (BC) versions. So only [COK-001](https://www.psdevwiki.com/ps3/COK-00x#COK-001) and [COK-002/COK-002W](https://www.psdevwiki.com/ps3/COK-00x#COK-002) boards are supported. USB, SMB, HDD modes are supported.
-
-To run OPL, you need an entry point for running PS2 titles. You can use everything (Swapmagic PS2, for example), but custom firmware with the latest Cobra is preferred. Note: only CFW supports HDD mode.
-
-</p>
-</details>
-
-<details>
-  <summary> <b> Some notes for DEVS </b> </summary>
-<p>
-
-Open PS2 Loader needs the [**latest PS2SDK**](https://github.com/ps2dev/ps2sdk)
-
-</p>
-</details>
-
-<details>
-  <summary> <b> OPL Archive </b> </summary>
-<p>
-
-Since 05/07/2021 every OPL build dispatched to the release section of this repository will be uploaded to a [mega account](https://mega.nz/folder/Ndwi1bAK#oLWNhH_g-h0p4BoT4c556A). You can access the archive by clicking the mega badge on top of this readme
-
-</p>
-</details>
-
-<details>
-  <summary> <b> Frequent Issues </b> </summary>
-<p>
-
-### OPL Freezes on logo or grey screen
-
- Sometimes OPL freezes when loading config files made by older OPL builds.
-> hold __`START`__ while OPL initializes to make it skip the config loading, then, you can save your own settings.
-> fixing the issue.
-
-### Game freezes on white screen
-
-> Main game executable could not be found. Either game is fragmented or image is corrupted
-
-### OPL does not display anything on boot
-
-> You may have selected a Video Mode which your TV does not support. Hold Triangle and Cross while OPL initializes to reset your video mode to "Auto".
-
-</p>
-</details>
+- OPL은 [Academic Free License 3.0](LICENSE)을 따릅니다. 원본 OPL 설명은 [README-OPL.md](README-OPL.md)에 있습니다.
+- 한국어 번역은 [ddinghoya의 기존 OPL 번역](https://github.com/ps2homebrew/Open-PS2-Loader-lang/blob/b23b743d9f8c65e7a305db945f442e5755019221/Korean.yml)에 [MMCE 문구](lng_tmpl/Korean-MMCE.yml)를 더했습니다.
+- `font_Korean.ttf`는 [OPL 번역 저장소에서 배포하는 UnTaza](https://github.com/ps2homebrew/Open-PS2-Loader-lang/blob/b23b743d9f8c65e7a305db945f442e5755019221/thirdparty/font_Korean.ttf)입니다. [UnTaza 글꼴 소스와 라이선스](https://ctan.org/tex-archive/fonts/unfonts-extra)를 참고하세요.
+- MMCE 지원은 [ps2-mmce](https://github.com/ps2-mmce) 프로젝트의 작업입니다.
